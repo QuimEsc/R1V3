@@ -124,7 +124,7 @@
 
   async function loginTeacher(event) {
     event.preventDefault();
-    const password = config.localMode ? dom.teacherPassword.value : 'firebase-auth';
+    const password = dom.teacherPassword.value;
     if (!password) return;
     dom.teacherSignInButton.disabled = true;
     dom.teacherAuthMessage.textContent = "Comprovant la contrasenya…";

@@ -28,7 +28,7 @@
   <script defer src="battle-teacher.js?v=2"></script>
   <script defer src="reforc-teacher.js?v=4"></script>
   <script src="ia-dashboard.js" defer></script>
-</head>
+<script defer src="device-classroom.js"></script></head>
 <body class="monitor-body theme-space">
   <section id="teacherGate" class="teacher-gate" aria-labelledby="teacherGateTitle">
     <article class="teacher-gate-card">
@@ -37,8 +37,8 @@
       <h1 id="teacherGateTitle">Centre de control privat</h1>
       <p>Introdueix la contrasenya per accedir al centre de control.</p>
       <form id="teacherLoginForm">
-        <p>Accés amb el compte docent propi de Firebase V3.</p>
-        <input id="teacherPassword" type="hidden">
+        <label for="teacherPassword">Contrasenya</label>
+        <input id="teacherPassword" type="password" autocomplete="current-password" maxlength="100" required>
         <button id="teacherSignInButton" class="primary-button" type="submit">Entrar al seguiment</button>
       </form>
       <p id="teacherAuthMessage" class="teacher-auth-message" role="status" aria-live="polite"></p>
