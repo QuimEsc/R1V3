@@ -24,7 +24,7 @@
  async function backend(action,payload,unauthenticated=false){
   const identity=unauthenticated?{}:await signIn();
   for(let attempt=0;attempt<3;attempt++){
-   let r,data;try{r=await fetch(cfg.appsScriptUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,payload:{...payload,groupId:cfg.groupId},idToken:identity.idToken,space}),signal:AbortSignal.timeout(action==='ia_sync'||action==='service_health'?180000:45000)});data=await r.json();}catch(error){
+   let r,data;try{r=await fetch(cfg.appsScriptUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,payload:{...payload,groupId:cfg.groupId},idToken:identity.idToken,space}),signal:AbortSignal.timeout(action.startsWith('entry_')||action==='ia_sync'||action==='service_health'?180000:45000)});data=await r.json();}catch(error){
     if(attempt<2&&['list_students','catalog','question_catalog','class_control_get','teacher_dashboard','assessment','report_history','report_recommendations','list_reviews','list_diagnostics','battle_history','list_proposals','ia_history','submission_status','demo_geometry','check_demo_geometry'].includes(action)){await new Promise(resolve=>setTimeout(resolve,250*(attempt+1)));continue;}throw error;
    }
    // BACKEND_BUSY means ScriptLock was not acquired: retry this rejected action,
@@ -43,9 +43,9 @@
   const cache='r1v3-production-cache:'+space+':'+action+':'+(payload.studentId||''),reads=['list_students','bootstrap','catalog','class_control_get'];
   try{
    if(action==='teacher_login'&&(!auth||auth.anonymous))return await teacherLogin(payload.password);
-   if(action==='list_students'&&!location.pathname.endsWith('/seguiment.html')){const identity=await signIn();if(identity.anonymous)return await backend('entry_roster',{});}
-   if(action==='bootstrap'){await signIn();if(auth.anonymous){await backend('entry_student',{studentId:payload.studentId,browserId});saveAuth({...auth,boundStudentId:payload.studentId,boundBrowserId:browserId});await refresh();}
-    payload={...payload,sessionId:payload.sessionId||localStorage.getItem('r1v3-session:'+space+':'+payload.studentId)||undefined};}
+   if(action==='list_students'&&!location.pathname.endsWith('/seguiment.html')){const identity=await signIn();if(identity.anonymous)return {ok:true,students:(await firebase('roster/'+cfg.groupId)).value||[]};}
+   if(action==='bootstrap'){await signIn();payload={...payload,sessionId:payload.sessionId||localStorage.getItem('r1v3-session:'+space+':'+payload.studentId)||undefined};
+    if(auth.anonymous){const data=await backend('entry_bootstrap',{...payload,browserId});saveAuth({...auth,boundStudentId:payload.studentId,boundBrowserId:browserId});await refresh();localStorage.setItem(cache,JSON.stringify(data));if(data.sessionId)localStorage.setItem('r1v3-session:'+space+':'+payload.studentId,data.sessionId);return data;}}
    if(action==='submit')await persistAnswer(payload);const data=await backend(action,payload);if(reads.includes(action))localStorage.setItem(cache,JSON.stringify(data));if(action==='bootstrap'&&data.sessionId)localStorage.setItem('r1v3-session:'+space+':'+payload.studentId,data.sessionId);
    if(action==='submit'&&data.iaStatus!=='DETERMINISTIC'){
     window.dispatchEvent(new CustomEvent('r1v3:answer-saved',{detail:{...payload,activityId:payload.exerciseId,mode:data.iaMode,status:data.iaStatus}}));
