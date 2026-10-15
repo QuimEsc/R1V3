@@ -44,11 +44,13 @@
  async function call(action,payload={}){
   const cache='r1v3-production-cache:'+space+':'+action+':'+(payload.studentId||''),reads=['list_students','bootstrap','catalog','class_control_get'];
   try{
+   if(cfg.isDemoProject&&['demo_geometry','check_demo_geometry'].includes(action))return await backend('entry_geometry',{...payload,operation:action});
    if(action==='teacher_login')return await teacherLogin(payload.password);
-   if(action==='list_students'&&!location.pathname.endsWith('/seguiment.html')){const identity=await signIn();if(identity.anonymous)return {ok:true,students:(await firebase('roster/'+cfg.groupId)).value||[]};}
+   if(action==='list_students'&&!location.pathname.endsWith('/seguiment.html')){const identity=await signIn();if(identity.anonymous){const data={ok:true,students:(await firebase('roster/'+cfg.groupId)).value||[]};localStorage.setItem(cache,JSON.stringify(data));return data;}}
    if(action==='bootstrap'){await signIn();payload={...payload,sessionId:payload.sessionId||localStorage.getItem('r1v3-session:'+space+':'+payload.studentId)||undefined};
     if(auth.anonymous){const data=await backend('entry_bootstrap',{...payload,browserId});saveAuth({...auth,boundStudentId:payload.studentId,boundBrowserId:browserId});await refresh();localStorage.setItem(cache,JSON.stringify(data));if(data.sessionId)localStorage.setItem('r1v3-session:'+space+':'+payload.studentId,data.sessionId);return data;}}
-   if(action==='class_control_get')return {ok:true,control:(await firebase('classControl/'+cfg.groupId)).value};
+   if(['list_reviews','list_diagnostics','list_proposals','ia_history'].includes(action)){const projected=(await firebase('teacherPolling/'+cfg.groupId+'/'+action)).value;if(projected)return projected;}
+   if(action==='class_control_get'){const data={ok:true,control:(await firebase('classControl/'+cfg.groupId)).value};localStorage.setItem(cache,JSON.stringify(data));return data;}
    if(action==='submit')await persistAnswer(payload);const data=await backend(action,payload);if(reads.includes(action))localStorage.setItem(cache,JSON.stringify(data));if(action==='bootstrap'&&data.sessionId)localStorage.setItem('r1v3-session:'+space+':'+payload.studentId,data.sessionId);
    if(action==='submit'&&data.iaStatus!=='DETERMINISTIC'){
     window.dispatchEvent(new CustomEvent('r1v3:answer-saved',{detail:{...payload,activityId:payload.exerciseId,mode:data.iaMode,status:data.iaStatus}}));
