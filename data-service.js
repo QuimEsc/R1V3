@@ -21,7 +21,9 @@
   saveAuth({idToken:v.idToken,uid:v.localId,refreshToken:v.refreshToken,expiresAt:Date.now()+Number(v.expiresIn)*1000,anonymous:false,role:'teacher'});return {ok:true,authorized:true,teacherToken:v.idToken};
  }
  async function firebase(relative,method='GET',value,etag){const identity=await signIn(),u=cfg.firebaseDatabaseUrl+'/'+cfg.firebaseRoot+'/'+relative+'.json?auth='+encodeURIComponent(identity.idToken),headers={};if(etag)headers['if-match']=etag;if(value!==undefined)headers['Content-Type']='application/json';if(method!=='PATCH')headers['X-Firebase-ETag']='true';const r=await fetch(u,{method,headers,body:value===undefined?undefined:JSON.stringify(value),signal:AbortSignal.timeout(10000)});if(r.status===412)return {conflict:true};const data=await r.json();if(!r.ok)throw Error('Firebase V3 ha denegat l’operació.');return {value:data,etag:r.headers.get('ETag')};}
- async function backend(action,payload,unauthenticated=false){
+ const pendingReads=new Map(),readActions=new Set(['list_students','catalog','question_catalog','class_control_get','teacher_dashboard','assessment','report_history','report_recommendations','list_reviews','list_diagnostics','battle_history','list_proposals','ia_history','submission_status','demo_geometry','check_demo_geometry']);
+ function backend(action,payload,unauthenticated=false){if(!readActions.has(action))return backendRequest(action,payload,unauthenticated);const requestKey=JSON.stringify([auth?.uid,action,payload]);if(pendingReads.has(requestKey))return pendingReads.get(requestKey);const pending=backendRequest(action,payload,unauthenticated).finally(()=>{if(pendingReads.get(requestKey)===pending)pendingReads.delete(requestKey);});pendingReads.set(requestKey,pending);return pending;}
+ async function backendRequest(action,payload,unauthenticated=false){
   const identity=unauthenticated?{}:await signIn();
   for(let attempt=0;attempt<3;attempt++){
    let r,data;try{r=await fetch(cfg.appsScriptUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,payload:{...payload,groupId:cfg.groupId},idToken:identity.idToken,space}),signal:AbortSignal.timeout(action.startsWith('entry_')||action==='ia_sync'||action==='service_health'?180000:45000)});data=await r.json();}catch(error){
@@ -42,10 +44,11 @@
  async function call(action,payload={}){
   const cache='r1v3-production-cache:'+space+':'+action+':'+(payload.studentId||''),reads=['list_students','bootstrap','catalog','class_control_get'];
   try{
-   if(action==='teacher_login'&&(!auth||auth.anonymous))return await teacherLogin(payload.password);
+   if(action==='teacher_login')return await teacherLogin(payload.password);
    if(action==='list_students'&&!location.pathname.endsWith('/seguiment.html')){const identity=await signIn();if(identity.anonymous)return {ok:true,students:(await firebase('roster/'+cfg.groupId)).value||[]};}
    if(action==='bootstrap'){await signIn();payload={...payload,sessionId:payload.sessionId||localStorage.getItem('r1v3-session:'+space+':'+payload.studentId)||undefined};
     if(auth.anonymous){const data=await backend('entry_bootstrap',{...payload,browserId});saveAuth({...auth,boundStudentId:payload.studentId,boundBrowserId:browserId});await refresh();localStorage.setItem(cache,JSON.stringify(data));if(data.sessionId)localStorage.setItem('r1v3-session:'+space+':'+payload.studentId,data.sessionId);return data;}}
+   if(action==='class_control_get')return {ok:true,control:(await firebase('classControl/'+cfg.groupId)).value};
    if(action==='submit')await persistAnswer(payload);const data=await backend(action,payload);if(reads.includes(action))localStorage.setItem(cache,JSON.stringify(data));if(action==='bootstrap'&&data.sessionId)localStorage.setItem('r1v3-session:'+space+':'+payload.studentId,data.sessionId);
    if(action==='submit'&&data.iaStatus!=='DETERMINISTIC'){
     window.dispatchEvent(new CustomEvent('r1v3:answer-saved',{detail:{...payload,activityId:payload.exerciseId,mode:data.iaMode,status:data.iaStatus}}));
