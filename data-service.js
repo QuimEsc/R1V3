@@ -20,7 +20,9 @@
  async function backend(action,payload){
   const identity=await signIn();
   for(let attempt=0;attempt<3;attempt++){
-   const r=await fetch(cfg.appsScriptUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,payload:{...payload,groupId:cfg.groupId},idToken:identity.idToken,space}),signal:AbortSignal.timeout(action==='ia_sync'||action==='service_health'?180000:45000)}),data=await r.json();
+   let r,data;try{r=await fetch(cfg.appsScriptUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,payload:{...payload,groupId:cfg.groupId},idToken:identity.idToken,space}),signal:AbortSignal.timeout(action==='ia_sync'||action==='service_health'?180000:45000)});data=await r.json();}catch(error){
+    if(attempt<2&&['list_students','catalog','question_catalog','class_control_get','teacher_dashboard','assessment','report_history','report_recommendations','list_reviews','list_diagnostics','battle_history','list_proposals','ia_history','submission_status','demo_geometry','check_demo_geometry'].includes(action)){await new Promise(resolve=>setTimeout(resolve,250*(attempt+1)));continue;}throw error;
+   }
    // BACKEND_BUSY means ScriptLock was not acquired: retry this rejected action,
    // never retry an uncertain mutation after a network error or timeout here.
    if(data.error==='BACKEND_BUSY'&&attempt<2){await new Promise(resolve=>setTimeout(resolve,250*(attempt+1)));continue;}
