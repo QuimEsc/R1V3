@@ -52,13 +52,18 @@
     } catch (error) { message(error.message, "error"); }
   }
   async function setControl(command) {
+    if(!ready){message("Espera que es carregue el control de classe.","warning");return;}
     const missionId = dom.classMissionSelect.value; const macroLevel = Number(dom.classMacroLevel.value || 1);
+    // Reserve the projection during the click, before the real backend can outlast
+    // the browser's user-activation window. Navigate only after the command succeeds.
+    const projection=command==="EXPLAIN"?window.open("about:blank","_blank"):null;
+    if(projection)projection.opener=null;
     try {
       const data = await window.GameData.call("class_control_set", { missionId, macroLevel, command }); currentControl = data.control; renderControl();
       if (window.GameLive) await window.GameLive.publishClassControl(currentControl);
-      if (command === "EXPLAIN") window.open(`presentacio.html?mission=${encodeURIComponent(missionId)}&level=${macroLevel}${window.GameData.space==='demo'?'&demo=1':''}`, "_blank", "noopener");
+      if (projection)projection.location.href=`presentacio.html?mission=${encodeURIComponent(missionId)}&level=${macroLevel}${window.GameData.space==='demo'?'&demo=1':''}`;
       message(data.message || "Control de classe actualitzat.", "good");
-    } catch (error) { message(error.message, "error"); }
+    } catch (error) { if(projection)projection.close();message(error.message, "error"); }
   }
   async function forceAdvance() {
     const target = mission(dom.classMissionSelect.value); const previous = currentControl && currentControl.missionId;
