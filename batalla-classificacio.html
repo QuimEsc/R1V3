@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ca">
+<head>
+  <script src="local-guard.js"></script>
+  <script defer src="vendor/mathjax/tex-mml-chtml.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#070c27">
+  <title>Classificació · Golden Quest</title>
+  <link rel="stylesheet" href="battle-projector.css?v=1">
+  <script defer src="config.js?v=4"></script>
+  <script defer src="firebase-config.js?v=2"></script>
+  <script defer src="data-service.js"></script>
+  <script defer src="local-realtime.js"></script>
+  <script defer src="battle-projector.js?v=2"></script>
+</head>
+<body>
+  <div class="projector-stars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+  <main class="projector-shell">
+    <header class="projector-header">
+      <div>
+        <span id="projectorPhase" class="projector-kicker">GOLDEN QUEST</span>
+        <h1 id="projectorTitle">Esperant una batalla…</h1>
+      </div>
+      <div class="projector-actions">
+        <strong id="projectorTimer">--:--</strong>
+        <button id="projectorFullscreen" type="button">⛶ Pantalla completa</button>
+      </div>
+    </header>
+
+    <section id="projectorEmpty" class="projector-empty">
+      <span>⚔️</span>
+      <strong>La classificació apareixerà en llançar la batalla</strong>
+      <small>Pots deixar aquesta pantalla oberta en el projector.</small>
+    </section>
+
+    <section id="projectorRanking" class="projector-ranking hidden" aria-label="Classificació en directe"></section>
+
+    <section id="projectorSeal" class="projector-seal hidden" aria-live="assertive">
+      <div class="vault-rings" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="vault-lock"><span>🔒</span></div>
+      <p>ELS ÚLTIMS 20 SEGONS</p>
+      <h2>La classificació queda oculta</h2>
+      <strong id="projectorSealTimer">20</strong>
+      <small>El resultat pot canviar fins a l’últim cofre.</small>
+    </section>
+  </main>
+</body>
+</html>

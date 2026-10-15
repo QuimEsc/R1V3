@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<script defer src="config.js"></script>
+<script defer src="data-service.js"></script>
+  <script src="local-guard.js"></script>
+  <script defer src="vendor/mathjax/tex-mml-chtml.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111a45">
+  <title>Demo de geometria · Missió Mates</title>
+  <link rel="stylesheet" href="styles.css?v=5">
+  <script defer src="geometry-editor.js?v=1"></script>
+</head>
+<body class="theme-space">
+  <main class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="demo.html"><span class="brand-mark" aria-hidden="true">📐</span><span><strong>Laboratori geomètric</strong><small>Demo sense guardar dades</small></span></a>
+      <a class="teacher-link" href="demo.html">Tornar</a>
+    </header>
+    <section class="exercise-screen">
+      <article class="exercise-card game-card">
+        <header class="exercise-header">
+          <a class="back-button" href="demo.html">← Demo</a>
+          <div class="exercise-meta"><span>PROVA L'EDITOR</span><strong>Construcció curricular</strong></div>
+          <div class="help-counter">📐</div>
+        </header>
+        <div class="exercise-body">
+          <div class="question-zone">
+            <p class="eyebrow">EL TEU REPTE</p>
+            <div id="geometryQuestion" class="question-content"><p>Carregant la construcció de M23…</p></div>
+          </div>
+          <section class="geometry-editor" aria-labelledby="geometryEditorTitle">
+            <div class="geometry-editor-heading">
+              <div><strong id="geometryEditorTitle">Construeix en la quadrícula</strong><span>Prem els punts en ordre. S'ajusten automàticament a la quadrícula.</span></div>
+              <span id="geometryPointCount" class="geometry-point-count">0 de 4 punts</span>
+            </div>
+            <svg id="geometryCanvas" class="geometry-canvas" viewBox="0 0 440 440" role="application" tabindex="0"></svg>
+            <div class="geometry-toolbar">
+              <button id="geometryUndoButton" class="secondary-button compact" type="button">↶ Desfer</button>
+              <button id="geometryClearButton" class="secondary-button compact" type="button">Netejar</button>
+            </div>
+          </section>
+          <div id="demoResult" class="feedback-panel result-panel hidden"><span class="feedback-icon">✓</span><div><strong>Figura preparada</strong><p>En l'activitat real s'enviarien les coordenades i el professor veuria este mateix dibuix en seguiment.</p></div></div>
+        </div>
+      </article>
+    </section>
+  </main>
+  <script>
+    window.addEventListener('DOMContentLoaded', async function () {
+      async function call(action,payload={}){return window.GameData.call(action,payload);}
+      try {
+        const data=await call('demo_geometry'),q=data.exercise;
+        document.getElementById('geometryQuestion').innerHTML=q.questionHtml;
+        window.GameGeometry.start({canvas:document.getElementById('geometryCanvas'),undoButton:document.getElementById('geometryUndoButton'),clearButton:document.getElementById('geometryClearButton'),counter:document.getElementById('geometryPointCount'),type:q.interactionType,config:q.interactionConfig,
+          onChange:async function(change){
+            const panel=document.getElementById('demoResult');panel.classList.toggle('hidden',!change.complete);if(!change.complete)return;
+            try {const result=await call('check_demo_geometry',{exerciseId:q.exerciseId,answer:change.answer});panel.classList.toggle('incorrect',!result.correct);panel.querySelector('strong').textContent=result.correct?'Construcció correcta':'Revisa la construcció';panel.querySelector('p').textContent=result.feedback;panel.querySelector('.feedback-icon').textContent=result.correct?'✓':'↻';}catch(e){panel.querySelector('p').textContent=e.message;}
+          }});
+      } catch(e){document.getElementById('geometryQuestion').textContent=e.message;}
+    });
+  </script>
+</body>
+</html>

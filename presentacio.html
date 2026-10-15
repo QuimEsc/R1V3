@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<script defer src="config.js"></script>
+  <script src="local-guard.js"></script>
+  <script defer src="vendor/mathjax/tex-mml-chtml.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#08112f">
+  <title>Explicació de la missió · Missió Base</title>
+  <link rel="stylesheet" href="presentacio.css?v=1">
+  <script defer src="catalog-metadata.js"></script>
+  <script defer src="math-check.js"></script>
+  <script defer src="data-service.js"></script>
+  <script defer src="local-realtime.js"></script>
+  <script defer src="reforc-core.js?v=1"></script>
+  <script defer src="presentacio.js?v=1"></script>
+</head>
+<body>
+  <header><a href="seguiment.html">← Seguiment</a><label>Missió <select id="missionSelect"></select></label><label>Nivell <select id="curriculumLevel"><option value="1">N1</option><option value="2" selected>N2</option><option value="3">N3</option></select></label><button id="fullscreenButton" type="button">Pantalla completa</button></header>
+  <main>
+    <p id="missionCode" class="eyebrow">MISSIÓ</p>
+    <h1 id="missionTitle">Carregant…</h1>
+    <p id="missionSubtitle" class="subtitle"></p>
+    <section class="rule-card"><span>REGLA DIRECTA</span><strong id="missionRule"></strong></section>
+    <section class="model-card"><span>MODEL RESOLT</span><strong id="missionExample"></strong></section>
+    <section class="teacher-script"><span>ERROR I COMPROVACIÓ</span><p id="guideError"></p></section>
+    <section class="teacher-script"><span>ALTRE CAMÍ</span><p id="guideAlternative"></p></section>
+    <div class="phase-examples">
+      <article><span>1 · SUPORT</span><p id="supportExample"></p><small>Quasi igual que el model.</small></article>
+      <article><span>2 · BASE</span><p id="baseExample"></p><small>Mateix procés, nombres nous.</small></article>
+      <article><span>3 · REPTE</span><p id="challengeExample"></p><small>Una variació curta.</small></article>
+    </div>
+  </main>
+</body>
+</html>
