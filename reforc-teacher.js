@@ -61,7 +61,7 @@
     try {
       const data = await window.GameData.call("class_control_set", { missionId, macroLevel, command }); currentControl = data.control; renderControl();
       if (window.GameLive) await window.GameLive.publishClassControl(currentControl);
-      if (projection)projection.location.href=`presentacio.html?mission=${encodeURIComponent(missionId)}&level=${macroLevel}${window.GameData.space==='demo'?'&demo=1':''}`;
+      if (projection&&!projection.closed)projection.location.href=`presentacio.html?mission=${encodeURIComponent(missionId)}&level=${macroLevel}${window.GameData.space==='demo'?'&demo=1':''}`;
       message(data.message || "Control de classe actualitzat.", "good");
     } catch (error) { if(projection)projection.close();message(error.message, "error"); }
   }
