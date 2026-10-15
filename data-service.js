@@ -16,8 +16,17 @@
    dialog.querySelector('form').onsubmit=async event=>{event.preventDefault();const form=event.target;try{const response=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+encodeURIComponent(cfg.firebaseWebApiKey),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:form.email.value,password:form.password.value,returnSecureToken:true})}),v=await response.json();if(!response.ok)throw Error('No s’ha pogut validar el compte V3.');auth={idToken:v.idToken,uid:v.localId,refreshToken:v.refreshToken,expiresAt:Date.now()+Number(v.expiresIn)*1000};sessionStorage.setItem(authKey,JSON.stringify(auth));form.password.value='';dialog.remove();resolve(auth);}catch(e){form.querySelector('[role=status]').textContent=e.message;}};
   })).finally(()=>authenticating=null);return authenticating;
  }
- async function firebase(relative,method='GET',value,etag){const identity=await signIn(),u=cfg.firebaseDatabaseUrl+'/'+cfg.firebaseRoot+'/'+relative+'.json?auth='+encodeURIComponent(identity.idToken),headers={};if(etag)headers['if-match']=etag;if(value!==undefined)headers['Content-Type']='application/json';headers['X-Firebase-ETag']='true';const r=await fetch(u,{method,headers,body:value===undefined?undefined:JSON.stringify(value),signal:AbortSignal.timeout(10000)});if(r.status===412)return {conflict:true};const data=await r.json();if(!r.ok)throw Error('Firebase V3 ha denegat l’operació.');return {value:data,etag:r.headers.get('ETag')};}
- async function backend(action,payload){const identity=await signIn();const r=await fetch(cfg.appsScriptUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,payload:{...payload,groupId:cfg.groupId},idToken:identity.idToken,space}),signal:AbortSignal.timeout(action==='ia_sync'||action==='service_health'?180000:45000)});const data=await r.json();if(!r.ok||data.ok===false)throw Error(data.error||'Backend V3 no disponible');return data;}
+ async function firebase(relative,method='GET',value,etag){const identity=await signIn(),u=cfg.firebaseDatabaseUrl+'/'+cfg.firebaseRoot+'/'+relative+'.json?auth='+encodeURIComponent(identity.idToken),headers={};if(etag)headers['if-match']=etag;if(value!==undefined)headers['Content-Type']='application/json';if(method!=='PATCH')headers['X-Firebase-ETag']='true';const r=await fetch(u,{method,headers,body:value===undefined?undefined:JSON.stringify(value),signal:AbortSignal.timeout(10000)});if(r.status===412)return {conflict:true};const data=await r.json();if(!r.ok)throw Error('Firebase V3 ha denegat l’operació.');return {value:data,etag:r.headers.get('ETag')};}
+ async function backend(action,payload){
+  const identity=await signIn();
+  for(let attempt=0;attempt<3;attempt++){
+   const r=await fetch(cfg.appsScriptUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,payload:{...payload,groupId:cfg.groupId},idToken:identity.idToken,space}),signal:AbortSignal.timeout(action==='ia_sync'||action==='service_health'?180000:45000)}),data=await r.json();
+   // BACKEND_BUSY means ScriptLock was not acquired: retry this rejected action,
+   // never retry an uncertain mutation after a network error or timeout here.
+   if(data.error==='BACKEND_BUSY'&&attempt<2){await new Promise(resolve=>setTimeout(resolve,250*(attempt+1)));continue;}
+   if(!r.ok||data.ok===false)throw Error(data.error||'Backend V3 no disponible');return data;
+  }
+ }
  async function persistAnswer(p){const identity=await signIn(),id=key(p.submissionId),relative='answers/'+cfg.groupId+'/'+identity.uid+'/'+id;
   const existing=await firebase(relative);if(existing.value){const a=existing.value;if(a.answer!==p.answer||a.activityId!==p.exerciseId||a.studentId!==p.studentId||a.sessionId!==p.sessionId)throw Error('IMMUTABLE_ANSWER_CONFLICT');return;}
   await backend('resume_submission',{studentId:p.studentId,sessionId:p.sessionId});
